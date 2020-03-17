@@ -1,0 +1,74 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{bm}
+\usepackage{cancel}
+\usepackage{graphicx}
+\usepackage{hyperref}
+
+
+\title{ELE 2765 - Deep Learning}
+\author{Tamir Einhorn Salem}
+\date{20.1}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\section{Aula 1 - 05/03}
+
+\subsection{Das definições ao Deep Learning}
+
+A priori, vamos trabalhar apenas com dados supervisionados, dos quais teremos então um 'par' $(x_i, y_i)$ onde o vetor $x_i$ poderá ter qualquer dimensão. 
+Entendemos o vetor $x_i$ como o vetor de inputs dados, e $y_i$ como o rótulo. \par
+Nós temos um vetor de pesos \textbf{W}, e uma função de ativação pré-escolhida \textit{f}, de tal forma que aplicamos $f(W^{T}x)$. Queremos achar o 'melhor' \textbf{W}, para classificar melhor nossa amostra. Para tal, precisamos de uma função de custo \textit{L}. \par
+A função de custo recebe dois inputs: o rótulo calculado por $f(W^{T}x)$ e o rótulo do dado em si, retornando um custo. O custo total da amostra é a média do custo de cada membro da amostra. Para impedir que a função de custo nos empurre ao custo zero, fitando todos os ruídos e nos causando overfitting, adicionamos um componente de regularização \textit{R(\textbf{W})} e um peso para essa regularização $\lambda$.\par
+Assim, estamos buscando o \textbf{W} que minimiza \textit{L}. O processo é iterativo, de tal forma que o meu novo \textbf{W} será o antigo \textbf{W} subtraído de $\underbrace{\alpha}_{LR} * \underbrace{\nabla_{\textbf{W}} L(\textbf{W})}_{gradient}$. Assim, $\alpha $ é meu learning rate (LR). Procedo desta forma até estourar o número de iterações ou até a variação estar dentro de minha faixa de tolerância. \par
+O problema é que calcular isto requer que o façamos sobre todas as amostras, o que é coisa demais e torna computacionalmente caro! A solução é dividirmos a amostra de tamanho \textit{m}, escolhidas de forma uniforme, e aí estimo o gradiente por minibatch e atualizo \textbf{W}. \par
+Quando temos um número de classes possíveis maior do que 2, podemos fazer uma regressão logística multinomial, onde frequentemente nossa vontade é que a saída seja probabilística, para encontrar a classe com maior probabilidade. A função de ativação que frequentemente usamos para isto, chamada de softmax, é dada da seguinte forma:
+temos um neurônio por classe, e cada um dos inputs conecta-se a todos os neurônios. Os pesos daquela classe formam um vetor, de forma que cada vetor de peso é uma coluna da matriz \textbf{W}. A softmax é dada por:
+\begin{equation}
+    \frac{e^{w_{i}^{T}}{x}}{\sum_{k}e^{w_{k}^{T}x}} \label{softmax}
+\end{equation}
+Uma forma de calcularmos a perda é tomarmos a probabilidade \textit{p} dada por nosso modelo à classe verdadeira daquela amostra, e aí tomar o logaritmo disto. Se o modelo performa perfeitamente, tem-se $p = 1$, e, portanto, $-log(p) = 0$. Formalizando, a cross-entropy loss é:
+\begin{equation}
+    L_i(\textbf{W}, x_i, y_i) = - log P(y_i |\textbf{W}, x_i) \label{cross entropy loss}
+\end{equation}
+Haja visto que \ref{softmax} nos dá diretamente a probabilidade, então basta que, em \ref{cross entropy loss}, tomemos o output de f como sendo $P(y_i |\textbf{W}, x_i)$ e fazemos a conta. \par
+Mas pode ser que, ainda assim, não seja suficiente! Neste caso, criamos mais camadas que se comportam desta mesma forma! Por isso, é como se fossemos criando uma rede neural com maior profundidade, o que nos origina o nome \textbf{Deep Learning}. Desta forma, antes o que entrava na função \textit{f} era $\textbf{W}^{T}x$, mas agora, pra próxima camada, o que é input é o valor de $\textit{f}(\textbf{W}^{T}x)$ multiplicado pelos pesos desta camada, e por aí vai.  \par
+O problema disto é que perdemos a interpretabilidade, e o número de parâmetros fica enorme! Pra cada \textit{n} inputs, conectamos eles com todos os neurônios da próxima camada. Se fôssemos classificar uma imagem 200x200 com poucas camadas, já temos $14.4 * 10^9$ parâmetros. Precisamos de algo melhor.
+
+\subsection{CNN - Convolutional Neural Networks}
+
+Para simplificarmos as coisas sem perder a profundidade, usamos as CNNs. Nela, os pesos de um neurônio de uma camada para o neurônio da próxima são os mesmos para \textbf{todos} os neurônios desta camada. Isto reduz o número de pesos de $m^2$ para uma certa constante k! Como a operação de pegar os pesos de um neurônio pro outro e deslizar para os próximos se assemelha à operação e convolução, este foi o nome dado!
+
+\section{Aula 2 - 12/03}
+\subsection{Como funcionam a Convolução}
+\subsubsection{Filtros}
+Imagine que temos um input, digamos uma imagem, com dimensões H x W x D. Pegamos um \textbf{filtro/kernel} que tem dimensões h x w x D, ou seja, de mesma profundidade, mas outras dimensões menores do que as da imagem original. Aí você pega um pedaço da imagem com essas dimensões do filtro e faz o produto matricial. Anda no tamanho do \textbf{passo} ao longo da largura da imagem, até chegar ao fim, e depois baixa na altura e repete isso, passando por toda ela. Cada multiplicação irá gerar um número, de forma que \textbf{cada} aplicação do filtro gera uma matriz, chamada de mapa de ativação! Logo, geramos um mapa de ativação por filtro, essencialmente empilhando esses mapas para recuperar a dimensão espacial da imagem. 
+A ideia é que, neste processo, estamos extraindo as características de alto nível da imagem, mas sem termos que trabalhar com toda a informação. O problema é que a aplicação do filtro perde informação na altura e na largura, nos deixando com um tensor com dimensão N (o número de filtros), mas altura e largura menores. 
+\subsubsection{Padding}
+O padding é justamente uma forma de resolver essa perda. Nós pegamos a seção da imagem que aplicaríamos o filtro e a aumentamos de alguma forma para resultar em um tensor de mesma dimensão que a seção original! Essencialmente, você pega a imagem e aumenta ela com \textbf{algo}. Pode ser com 0s, como é o caso do zero padding, mas, se estamos aplicando o filtro no 'meio' da imagem, dá pra ampliar ela usando o que está ao redor, etc. Existem várias formas.
+\subsubsection{Resultado da Convolução}
+Vamos ser mais formais. Temos alguns hiperparâmetros a ser definidos:
+o tamanho $h$ do filtro (que, em geral, é quadrado, e tem a mesma profundidade da imagem); o número $k$ de filtros; o tamanho do passo $s$; o tamanho do padding $p$. Como temos um filtro de dimensões $h$ x $h$ x $D_1$, temos um parâmetro para cada 'quadrado' do filtro, resultando em $h^2 D_1$ parâmetros por filtro. Como ainda tem o viés e são $k$ filtros, temos então $kh^2D_1 + k$ parâmetros a serem otimizados pela rede em uma camada de convolução. \par
+O input inicial tem as dimensões $H_1$ x $W_1$ x $D_1$, e o output da convolução é dado por $\frac{H_1 - h + 2p}{s+1}$ x $\frac{W_1 - h + 2p}{s+1}$ x k.
+\subsection{Pooling}
+Podemos adicionar uma (ou múltiplas) camadas na rede cujo objetivo é reduzir o ruído, diminuir o poder computacional e agregar as informações mais importantes. Como vemos no exemplo:
+\begin{figure}[h]
+\includegraphics[scale = 0.5]{Pooling.PNG}
+
+\end{figure}
+Ele tá andando de 2 em 2 e pegando o maior valor, reduzindo a imagem. Então você aplica a convolução, usa a função de ativação depois disso e aí aplica o pooling, reduzindo tudo aos poucos e pegando o principal da imagem.
+
+\subsection{Camada Final}
+Em geral, a gente pega a camada final e achata ela como um vetorzão só, similar ao que fazíamos nas redes anteriores. Essa camada será similar às redes anteriores também no número de conexões, sendo totalmente conectada com a camada de outputs! Isso permite que tenhamos combinações não lineares das características de alto nível sendo 'aprendidas' para a classificação!
+
+\subsection{Funções de ativação}
+Sigmoide não é centrada em zero. Logo, o que ocorre é que seu problema de aprendizado leva muito mais, porque os gradientes nos pesos ficam todos com o mesmo sinal, já que se todos os inputs do neurônio forem positivos, tudo vai sair positivo. Se o gradiente anterior vier negativo, sai negativo. Se vier positivo, sai positivo. Se o peso 'certo' for uma combinação de peso positivo com negativo, você vai ficar sempre andando em ziguezague.
+
+\end{document}
